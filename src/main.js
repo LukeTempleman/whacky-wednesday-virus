@@ -3,7 +3,7 @@
 import { state, load, reset, setMuted, clearLevel, canEnter } from "./state.js";
 import { renderBoot, renderHome, renderLevelComplete, renderVictory, failOverlay } from "./ui/screens.js";
 import { createHUD } from "./ui/hud.js";
-import { sfx } from "./audio.js";
+import { sfx, music } from "./audio.js";
 import createLevel1 from "./levels/level1.tendani.js";
 import createLevel2 from "./levels/level2.sechaba.js";
 import createLevel3 from "./levels/level3.katlego.js";
@@ -15,7 +15,7 @@ const LEVELS = {
   2: { factory: createLevel2, codename: "SECHABA",  theme: "Firewall Bypass",    objective: "Mirror the firewall auth sequence.", fail: "The firewall locked you out." },
   3: { factory: createLevel3, codename: "KATLEGO",  theme: "Cipher Crack",       objective: "Brute the 4-symbol root cipher.",    fail: "The cipher held. Out of attempts." },
   4: { factory: createLevel4, codename: "LUKE",     theme: "Process Purge",      objective: "Kill malware. Spare system processes.", fail: "The terminal was overrun." },
-  5: { factory: createLevel5, codename: "RESHIGAN", theme: "Core Override",      objective: "Override the virus core." }
+  5: { factory: createLevel5, codename: "RESHIGAN", theme: "Core Override",      objective: "Override the virus core.", fail: "The core override timed out — the virus re-secured itself." }
 };
 
 const LEVEL_LIST = [1, 2, 3, 4, 5].map(n => ({
@@ -39,6 +39,7 @@ function mount(renderFn) {
   if (result && typeof result.destroy === "function") {
     activeCleanup = () => result.destroy();
   }
+  music.sync();
 }
 
 /* ---------------- routes ---------------- */
@@ -61,7 +62,7 @@ function goHome() {
       },
       onSelectLevel: goLevel,
       onReset: () => { reset(); goHome(); },
-      onToggleMute: () => { sfx.unlock(); setMuted(!state.muted); }
+      onToggleMute: () => { sfx.unlock(); setMuted(!state.muted); music.sync(); }
     });
   });
 }
@@ -140,4 +141,7 @@ function goVictory() {
 
 /* ---------------- start ---------------- */
 load();
+music.start();
+// browsers may block autoplay until a gesture - catch the first tap
+window.addEventListener("pointerdown", () => { sfx.unlock(); music.start(); }, { once: true });
 goBoot();

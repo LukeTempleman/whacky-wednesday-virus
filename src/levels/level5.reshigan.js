@@ -2,6 +2,7 @@
 import { sfx } from "../audio.js";
 
 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const FIGHT_TIME = 99;   // seconds for the whole boss fight; timeout -> restart
 
 // Phase A target commands (3-4 tokens each). 5 of them -> 100% to 0% integrity.
 const COMMANDS = [
@@ -45,6 +46,8 @@ export default function createLevel(root, { onComplete, onFail, hud }) {
   let commandsDone = 0;
   let combo = 0;
   let phase = "A";
+  let timeLeft = FIGHT_TIME;
+  let fightTimerId = null;
   const timers = new Set();
 
   function track(id) { timers.add(id); return id; }
@@ -87,18 +90,13 @@ export default function createLevel(root, { onComplete, onFail, hud }) {
   }
 
   function syncHud() {
-    if (phase === "A") {
-      hud.setStats([
-        { label: "Core", value: integrity + "%" },
-        { label: "Phase", value: "A · INJECT" },
-        { label: "Combo", value: "x" + combo }
-      ]);
-    } else {
-      hud.setStats([
-        { label: "Core", value: integrity + "%" },
-        { label: "Phase", value: "B · KILL-SWITCH" }
-      ]);
-    }
+    const stats = [
+      { label: "Core", value: integrity + "%" },
+      { label: "Phase", value: phase },
+      { label: "Time", value: timeLeft + "s", cls: timeLeft <= 15 ? "hud-timer low" : "hud-timer" }
+    ];
+    if (phase === "A") stats.splice(2, 0, { label: "Combo", value: "x" + combo });
+    hud.setStats(stats);
   }
 
   function bossHurt() {
@@ -294,19 +292,36 @@ export default function createLevel(root, { onComplete, onFail, hud }) {
   function finishWin() {
     if (over) return;
     over = true;
+    if (fightTimerId) clearInterval(fightTimerId);
     clearTimers();
     onComplete();
+  }
+
+  function finishLose() {
+    if (over) return;
+    over = true;
+    locked = true;
+    if (fightTimerId) clearInterval(fightTimerId);
+    clearTimers();
+    onFail();
   }
 
   // --- boot phase A ---
   renderBar();
   syncHud();
+  fightTimerId = setInterval(() => {
+    if (over) return;
+    timeLeft--;
+    syncHud();
+    if (timeLeft <= 0) finishLose();
+  }, 1000);
   buildPhaseA();
 
   return {
     destroy() {
       over = true;
       locked = true;
+      if (fightTimerId) clearInterval(fightTimerId);
       clearTimers();
       root.classList.remove("shake");
     }

@@ -6,7 +6,7 @@ const DEFAULTS = {
   screen: "home",
   unlockedLevel: 1,   // highest enterable level (1..5)
   clearedLevels: [],  // e.g. [1,2]
-  muted: true
+  muted: false        // sound + background music on by default
 };
 
 export const state = { ...DEFAULTS };

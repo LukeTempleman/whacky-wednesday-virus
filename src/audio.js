@@ -1,7 +1,9 @@
-// Tiny WebAudio blips - no audio files. Default muted (mobile autoplay policy).
+// WebAudio blips + looping background music track. Sound is on by default;
+// the music starts on load or, if the browser blocks autoplay, on first tap.
 import { state } from "./state.js";
 
 let ctx = null;
+let musicEl = null;
 
 function ensureCtx() {
   if (ctx) return ctx;
@@ -42,4 +44,29 @@ export const sfx = {
   },
   // unlock the AudioContext on first user gesture
   unlock()  { const ac = ensureCtx(); if (ac && ac.state === "suspended") ac.resume(); }
+};
+
+function ensureMusic() {
+  if (musicEl) return musicEl;
+  musicEl = new Audio("assets/music.mp3");
+  musicEl.loop = true;
+  musicEl.volume = 0.4;
+  return musicEl;
+}
+
+export const music = {
+  // Try to play. Browsers may reject autoplay until a user gesture - the
+  // rejection is swallowed and a later sync()/tap will pick it up.
+  start() {
+    if (state.muted) return;
+    const m = ensureMusic();
+    const p = m.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  },
+  pause() { if (musicEl) musicEl.pause(); },
+  // align playback with the current mute state
+  sync() {
+    if (state.muted) this.pause();
+    else this.start();
+  }
 };

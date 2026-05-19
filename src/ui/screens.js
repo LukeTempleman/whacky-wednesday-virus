@@ -19,20 +19,31 @@ export function renderBoot(root, { onDone }) {
 
   const lines = [
     "> wwv-defense-grid v2.3 :: cold boot",
-    "> mounting subsystems ......... [OK]",
-    "> threat scan ... SIGNATURE: WHACKY_WEDNESDAY",
+    "> power-on self test ............ [OK]",
+    "> mounting /dev/core ............ [OK]",
+    "> loading kernel modules ........ [OK]",
+    "> establishing dark uplink ...... [OK]",
+    "> decrypting subsystem registry . [OK]",
+    "> scanning memory sectors ....... [OK]",
+    "> threat scan :: SIGNATURE = WHACKY_WEDNESDAY",
+    "> infection level .............. CRITICAL",
+    "> 5 subsystems compromised",
+    "> arming breach toolkit ......... [OK]",
+    "> operative clearance .......... GRANTED",
     "> launching breach console ..."
   ];
 
+  const STEP = 430;
   const timers = [];
   lines.forEach((text, i) => {
     timers.push(setTimeout(() => {
-      const line = el("div", "boot-line", text);
-      if (i === lines.length - 1) line.classList.add("cursor");
+      const prev = screen.querySelector(".boot-line.cursor");
+      if (prev) prev.classList.remove("cursor");
+      const line = el("div", "boot-line cursor", text);
       screen.appendChild(line);
-    }, i * 300));
+    }, i * STEP));
   });
-  timers.push(setTimeout(onDone, lines.length * 300 + 250));
+  timers.push(setTimeout(onDone, lines.length * STEP + 500));
 
   return { destroy() { timers.forEach(clearTimeout); } };
 }
